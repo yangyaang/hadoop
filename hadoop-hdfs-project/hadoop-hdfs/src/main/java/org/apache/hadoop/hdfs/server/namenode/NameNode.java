@@ -536,6 +536,7 @@ public class NameNode implements NameNodeStatusMXBean {
   }
 
   protected void loadNamesystem(Configuration conf) throws IOException {
+    // 从磁盘上读取fsImage喝editLog文件
     this.namesystem = FSNamesystem.loadFromDisk(conf);
   }
 
@@ -590,13 +591,16 @@ public class NameNode implements NameNodeStatusMXBean {
     StartupProgressMetrics.register(startupProgress);
 
     if (NamenodeRole.NAMENODE == role) {
+      // 启动 httpServer， 默认端口号50070
       startHttpServer(conf);
     }
 
     this.spanReceiverHost = SpanReceiverHost.getInstance(conf);
 
+    // 初始化fsNameSystem 加载元数据
     loadNamesystem(conf);
 
+    // 初始化rpcServer，这里没启动，后面启动的
     rpcServer = createRpcServer(conf);
     if (clientNamenodeAddress == null) {
       // This is expected for MiniDFSCluster. Set it now using 
@@ -629,6 +633,7 @@ public class NameNode implements NameNodeStatusMXBean {
 
   /** Start the services common to active and standby states */
   private void startCommonServices(Configuration conf) throws IOException {
+    // 调用fsNameSystem
     namesystem.startCommonServices(conf, haContext);
     registerNNSMXBean();
     if (NamenodeRole.NAMENODE != role) {
@@ -762,6 +767,7 @@ public class NameNode implements NameNodeStatusMXBean {
     this.haContext = createHAContext();
     try {
       initializeGenericKeys(conf, nsId, namenodeId);
+      // 核心代码
       initialize(conf);
       try {
         haContext.writeLock();
@@ -1384,6 +1390,7 @@ public class NameNode implements NameNodeStatusMXBean {
 
     switch (startOpt) {
       case FORMAT: {
+        // -format
         boolean aborted = format(conf, startOpt.getForceFormat(),
             startOpt.getInteractiveFormat());
         terminate(aborted ? 1 : 0);
@@ -1443,6 +1450,7 @@ public class NameNode implements NameNodeStatusMXBean {
       }
       default: {
         DefaultMetricsSystem.initialize("NameNode");
+        // 正常走这里
         return new NameNode(conf);
       }
     }
